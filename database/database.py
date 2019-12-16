@@ -30,8 +30,6 @@ def create_customers_table():
     finally:
         close_connection(connection, cursor)
 
-create_customers_table()
-
 def create_transactions_table():
     try:
         connection, cursor = open_connection()
@@ -50,8 +48,6 @@ def create_transactions_table():
     finally:
         close_connection(connection, cursor)
 
-create_transactions_table()
-
 def query_database(query, params = None):
     try:
         connection, cursor = open_connection()
@@ -68,31 +64,65 @@ def query_database(query, params = None):
         connection.close()
 
 def create_customer(customer):
-    query = """INSERT INTO customers VALUES (? ,?, ?)"""
-    params = (customer.customer_id, customer.customer_name, customer.customer_lastName)
+    query = """INSERT INTO customers VALUES (? ,?, ?, ?)"""
+    params = (customer.customer_id, customer.customer_name, customer.customer_lastName, customer.transaction_id)
     query_database(query, params)
 
-customer1 = customer(None, "Irma", "Linartaite")
-
-create_customer(customer1)
-
-def create_transaction(transaction):
-    query = """INSERT INTO transactions VALUES (? ,?)"""
-    params = (transaction.transaction_id, transaction.transaction_number)
+def create_transaction(transaction, customer_id):
+    query = """INSERT INTO transactions VALUES (? ,?, ?)"""
+    params = (transaction.transaction_id, transaction.transaction_number, customer_id)
     query_database(query, params)
 
-transaction1 = transaction(None, 123456)
-
-create_transaction(transaction1)
-
-def get_customer(customer):
+def get_customer():
     query = """SELECT * FROM customers"""
     query_database(query)
 
-get_customer(customer1)
-
-def get_transaction(transaction):
+def get_transaction():
     query = """SELECT * FROM transactions"""
     query_database(query)
 
-get_transaction(transaction1)
+def update_customer(customer_id, transaction_id):
+    query = """ UPDATE customers SET transaction_id = ? WHERE customer_id = ? """
+    params = (transaction_id, customer_id)
+    query_database (query, params)
+
+# def update_transaction(transaction_id, customer_id):
+#     query = """ UPDATE transactions SET customer_id = ? WHERE transaction_id = ? """
+#     params = (transaction_id, customer_id)
+#     query_database(query, params)
+
+def insert_record(customer, transaction):
+    create_customer(customer)
+
+    connection, cursor = open_connection()
+
+    customer_id_for_transaction = cursor.execute("SELECT customer_id FROM customers WHERE customer_name = 'Irma' ").fetchone()
+
+    close_connection(connection, cursor)
+
+    customer.customer_id = customer_id_for_transaction[0]
+
+    create_transaction(transaction, customer.customer_id)
+
+    connection, cursor = open_connection()
+
+    transaction_id_for_customer = cursor.execute("SELECT transaction_id FROM transactions ORDER BY transaction_id DESC").fetchone()
+
+    close_connection(connection, cursor)
+
+    transaction.transaction_id = transaction_id_for_customer[0]
+
+    update_customer(customer.customer_id, transaction.transaction_id)
+
+
+customer1 = customer(None, "Irma", "Linartaite", None)
+transaction1 = transaction(None, 123456, None)
+
+create_customers_table()
+create_transactions_table()
+# create_customer(customer1)
+# create_transaction(transaction1)
+insert_record(customer1, transaction1)
+get_customer()
+get_transaction()
+
